@@ -1,4 +1,4 @@
-# Pendant
+# Pendant: a Mac app for the Limitless pendant
 
 A Mac app that keeps a Limitless pendant useful without the Limitless service. It downloads recordings from the pendant over Bluetooth, saves the audio on your Mac, and transcribes it on your Mac with two speech models. Nothing is sent to a server.
 
