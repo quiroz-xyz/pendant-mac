@@ -19,6 +19,7 @@ Usage:
     pendant_drain.py sync --address ADDR --library DIR
     pendant_drain.py scan
     pendant_drain.py recover --library DIR      # decode leftover journals
+    pendant_drain.py combine --out-dir DIR [--title T] A.opus B.opus ...
 """
 from __future__ import annotations
 
@@ -295,6 +296,145 @@ def cmd_recover(args) -> int:
     return 0
 
 
+# --------------------------------------------------------------------------
+# Combine recordings: joins the audio without re-encoding it, and joins the
+# transcripts with their timestamps shifted to match.
+# --------------------------------------------------------------------------
+
+def ogg_packets(path: Path):
+    """Yield the Opus audio packets of an Ogg Opus file (headers skipped)."""
+    data = path.read_bytes()
+    pos = 0
+    packet = b""
+    index = 0
+    while pos + 27 <= len(data) and data[pos:pos + 4] == b"OggS":
+        nsegs = data[pos + 26]
+        table = data[pos + 27:pos + 27 + nsegs]
+        body = pos + 27 + nsegs
+        for seg in table:
+            packet += data[body:body + seg]
+            body += seg
+            if seg < 255:           # a segment shorter than 255 ends the packet
+                if index >= 2 and packet:   # packets 0 and 1 are OpusHead and OpusTags
+                    yield packet
+                index += 1
+                packet = b""
+        pos = body
+
+
+_STAMP = __import__("re").compile(r"^\[(\d+):(\d{2})(?::(\d{2}))?\]")
+
+
+def shift_transcript(text: str, offset: float) -> str:
+    """Add `offset` seconds to every [m:ss] timestamp at the start of a line."""
+    def clock(seconds: float) -> str:
+        t = int(seconds)
+        return f"{t // 3600}:{t % 3600 // 60:02d}:{t % 60:02d}" if t >= 3600 else f"{t // 60}:{t % 60:02d}"
+
+    out = []
+    for line in text.splitlines():
+        m = _STAMP.match(line)
+        if m:
+            a, b, c = m.group(1), m.group(2), m.group(3)
+            secs = int(a) * 3600 + int(b) * 60 + int(c) if c else int(a) * 60 + int(b)
+            line = f"[{clock(secs + offset)}]" + line[m.end():]
+        out.append(line)
+    return "\n".join(out)
+
+
+def cmd_combine(args) -> int:
+    from pendant_client.cli import OggOpusWriter
+
+    inputs = [Path(p) for p in args.inputs]
+    if len(inputs) < 2:
+        emit("error", message="Pick at least two recordings to combine.")
+        return 1
+    if any(p.suffix.lower() != ".opus" for p in inputs):
+        emit("error", message="Only pendant recordings (.opus) can be combined.")
+        return 1
+
+    sides = []
+    for p in inputs:
+        try:
+            sides.append(json.loads(p.with_suffix(".json").read_text()))
+        except Exception:  # noqa: BLE001
+            emit("error", message=f"Missing details file for {p.name}.")
+            return 1
+    order = sorted(range(len(inputs)), key=lambda i: sides[i]["start"])
+    inputs = [inputs[i] for i in order]
+    sides = [sides[i] for i in order]
+
+    out_dir = Path(args.out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    stem = inputs[0].stem.split("-")[0] + "-combined"
+    dest = out_dir / f"{stem}.opus"
+    n = 1
+    while dest.exists():
+        n += 1
+        dest = out_dir / f"{stem}-{n}.opus"
+
+    writer = OggOpusWriter(dest)
+    offsets = []
+    total_packets = 0
+    for p in inputs:
+        offsets.append(total_packets * FRAME_MS / 1000)
+        for packet in ogg_packets(p):
+            writer.add_packet(packet)
+            total_packets += 1
+    writer.close()
+    seconds = total_packets * FRAME_MS / 1000
+
+    # Transcripts: only joined when every part has one. Otherwise the combined
+    # recording is left without one and the app transcribes it as a whole.
+    texts = [p.with_suffix(".txt") for p in inputs]
+    if all(t.exists() for t in texts):
+        parts = []
+        for p, side, t, off in zip(inputs, sides, texts, offsets):
+            when = dt.datetime.fromisoformat(side["start"]).strftime("%-I:%M %p")
+            label = side.get("title") or f"recording from {when}"
+            parts.append(f"({label})\n" + shift_transcript(t.read_text(), off))
+        dest.with_suffix(".txt").write_text("\n\n".join(parts))
+
+        pieces = []
+        for p, off in zip(inputs, offsets):
+            tj = p.with_name(p.stem + ".transcript.json")
+            if tj.exists():
+                for piece in json.loads(tj.read_text()).get("pieces", []):
+                    piece["start"] += off
+                    piece["end"] += off
+                    pieces.append(piece)
+        if pieces:
+            dest.with_name(dest.stem + ".transcript.json").write_text(
+                json.dumps({"audio": dest.name, "seconds": seconds, "pieces": pieces,
+                            "combined_from": [p.name for p in inputs]}, indent=1))
+
+    # Where each part begins in the combined audio (seconds), so the app can
+    # mark the joins on the playback bar. Parts that were themselves combined
+    # earlier keep their own joins.
+    joins = []
+    for side, off in zip(sides, offsets):
+        if off > 0:
+            joins.append(round(off, 2))
+        joins.extend(round(off + j, 2) for j in side.get("joins", []))
+
+    info = {
+        "file": dest.name,
+        "start": sides[0]["start"],
+        "joins": sorted(joins),
+        "seconds": round(seconds, 1),
+        "time_uncertain": any(s.get("time_uncertain") for s in sides),
+        "combined_from": [p.name for p in inputs],
+    }
+    title = args.title.strip() if args.title else ""
+    if title:
+        info["title"] = title
+    if any(s.get("demo") for s in sides):
+        info["demo"] = True
+    dest.with_suffix(".json").write_text(json.dumps(info, indent=1))
+    emit("combined", path=str(dest), seconds=info["seconds"], parts=len(inputs))
+    return 0
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -313,6 +453,12 @@ def main() -> int:
     sr = sub.add_parser("recover")
     sr.add_argument("--library", required=True)
     sr.set_defaults(fn=cmd_recover)
+
+    sm = sub.add_parser("combine")
+    sm.add_argument("--out-dir", required=True)
+    sm.add_argument("--title", default="")
+    sm.add_argument("inputs", nargs="+")
+    sm.set_defaults(fn=cmd_combine)
 
     args = p.parse_args()
     return args.fn(args)

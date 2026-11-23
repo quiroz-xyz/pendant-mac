@@ -50,7 +50,8 @@ final class TranscriptionQueue: ObservableObject {
 
     private func nextRecording(in library: LibraryStore) -> Recording? {
         // Newest first, so what you just synced is ready soonest.
-        library.days.flatMap(\.recordings).first { $0.transcript == nil && !failed.contains($0.id) }
+        library.days.flatMap(\.recordings).sorted { $0.start > $1.start }
+            .first { $0.transcript == nil && !failed.contains($0.id) }
     }
 
     private func transcribe(_ rec: Recording) async -> Bool {
@@ -113,9 +114,10 @@ enum Markdown {
             .filter { $0.dayKey == dayKey && $0.transcript != nil }
             .sorted { $0.start < $1.start }
         guard let first = recs.first else { return nil }
-        var text = "# Pendant transcripts: \(first.day)\n"
+        var text = "# Pendant transcripts: \(first.filedDayTitle)\n"
         for rec in recs {
-            text += "\n## \(rec.timeText) (\(rec.durationText))\n\n\(rec.transcript ?? "")\n"
+            let name = rec.title.map { "\($0), " } ?? ""
+            text += "\n## \(name)\(rec.listTimeText) (\(rec.durationText))\n\n\(rec.transcript ?? "")\n"
         }
         return text
     }

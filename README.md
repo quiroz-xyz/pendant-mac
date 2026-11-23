@@ -13,11 +13,14 @@ It works on one person's setup: a pendant on firmware 1.1.20 and an M4 MacBook A
 ## What it does
 
 - **Sync:** connects to the pendant over Bluetooth, downloads everything stored on it, and stops by itself once it has caught up.
-- **Library:** lists recordings by day, with a player.
+- **Library:** a calendar marks the days that have recordings; pick a day to see its recordings, with a player.
+- **Organise:** name recordings, combine several into one, and move a late-night recording to the day before.
 - **Transcription:** runs in the background at low priority after each sync. Each recording is transcribed by Whisper large-v3 and by Parakeet v3, and passages where the two disagree are marked so you can check them by ear.
 - **English and Spanish:** the language is detected for each short piece of audio, so a conversation that moves between languages is transcribed in each. Whisper supports many more languages; only English and Spanish have been tried.
 - **Plain files:** every transcript is a text file, and each day also gets one Markdown file, easy to paste into a chat assistant or read with any tool.
 - **Delete:** moves a recording and its transcript to the Trash.
+
+<img src="PendantApp/Support/AppIcon.svg" width="96" alt="Pendant app icon">
 
 ## Before you start
 
@@ -81,12 +84,36 @@ Then press **Sync** again.
 
 ## Using it
 
+**Syncing and transcribing**
+
 - **Sync** downloads new recordings. Sync often: Bluetooth is slow, so a long backlog takes a long time.
 - **Transcribe** (toolbar toggle) pauses or resumes background transcription.
 - A clock icon marks recordings waiting to be transcribed; a spinner marks the one in progress.
-- **Copy** copies the transcript. The **More** menu has Copy Whole Day, Show in Finder and Delete.
+- The bar at the bottom shows what the app is doing and the pendant's battery level.
+
+**Finding recordings**
+
+- The calendar on the left shows a dot under each day that has recordings. Click a day to list its recordings.
+- **Today** jumps back to today.
+
+**Working with a recording**
+
+- **Copy** copies its transcript. **Show in Finder** reveals the audio file. **Delete** moves it to the Trash.
+- Double-click a recording's name, in the list or in the title, to rename it. Return saves, Escape cancels.
+- Right-click a recording for **Move to Previous Day** and **Move to Next Day**. The recording keeps its real time and is listed under the other day, which suits a session that ran past midnight.
 - **Control-Delete** or **Command-Delete** moves the selected recording to the Trash straight away. The Delete key asks first.
 - To redo a transcript, delete the recording's `.txt` file in Finder; the app queues it again.
+
+**Combining recordings**
+
+- Click **Combine** under the calendar, tick two or more recordings from that day, optionally give the result a name, and press **Combine into One Recording**.
+- The audio is joined in time order without re-encoding. The transcripts are joined with their times adjusted. The separate recordings go to the Trash.
+- A dot under the playback bar marks each place where two parts meet. Click a dot to jump there.
+
+**Copying several transcripts**
+
+- Select several recordings with Shift-click or Command-click (Command-A selects the whole day), right-click, and choose **Copy N Transcripts**.
+- Right-click a day in the calendar and choose **Copy This Day's Transcripts** to copy everything from that day.
 
 ## Where your files are
 
@@ -116,11 +143,15 @@ Pendant ──Bluetooth──▶ pendant-cli ──▶ pendant_drain.py ──�
 - **Sync** (`PendantApp/Support/pendant_drain.py`) is a Python script built on pendant-cli, which speaks the pendant's Bluetooth protocol. The script writes every message to a journal file on disk the moment it arrives, because the pendant deletes each piece once it is acknowledged. If a sync is interrupted, the next one recovers what was already received. It stops when it receives audio recorded after the sync began, since a pendant that is recording never goes idle. It then joins continuous audio into recordings; a pause of more than 30 seconds starts a new one.
 - **Transcription** (`PendantApp/Sources/PendantTranscribe`) is a separate Swift command-line tool that the app runs at background priority. It cuts the audio at pauses into pieces of at most 28 seconds, transcribes each piece with both models, compares the two results word by word, and marks pieces where they agree on less than 60% of the words. Pieces with no speech are left out.
 
+- **Combining** is done by the same Python script: it copies the Opus packets from each file into one new Ogg Opus file, so nothing is re-encoded.
+
+The app icon is drawn in `PendantApp/Support/AppIcon.svg`; `swift tools/make_icon.swift` turns it into the `.icns` file the app uses.
+
 The pendant's USB port is also a serial command shell. `tools/pendant_usb.py` sends commands to it. Some of those commands erase recordings or rewrite storage, so only send ones you understand.
 
 ## Known limits
 
-- A recording that is still in progress when a sync ends shows up as two entries.
+- A recording that is still in progress when a sync ends shows up as two entries. Combine can join them afterwards.
 - Transcripts do not say who is speaking.
 - If speakers switch language without pausing, words can be lost, because each piece of audio is treated as one language.
 - Background music is transcribed badly and produces many "models disagree" marks.

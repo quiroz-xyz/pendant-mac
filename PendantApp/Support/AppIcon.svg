@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5563E0"/>
+      <stop offset="1" stop-color="#1D2163"/>
+    </linearGradient>
+  </defs>
+  <!-- macOS-style rounded square -->
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="url(#bg)"/>
+  <!-- cord -->
+  <path d="M 322 100 L 500 404 M 702 100 L 524 404" stroke="#FFFFFF" stroke-opacity="0.6"
+        stroke-width="16" stroke-linecap="round" fill="none"/>
+  <!-- loop the cord passes through -->
+  <circle cx="512" cy="420" r="28" fill="none" stroke="#FFFFFF" stroke-width="16"/>
+  <!-- the pendant -->
+  <circle cx="512" cy="622" r="180" fill="#FFFFFF"/>
+  <!-- sound bars -->
+  <g fill="#3340B5">
+    <rect x="377" y="592" width="34" height="60"  rx="17"/>
+    <rect x="436" y="552" width="34" height="140" rx="17"/>
+    <rect x="495" y="517" width="34" height="210" rx="17"/>
+    <rect x="554" y="552" width="34" height="140" rx="17"/>
+    <rect x="613" y="592" width="34" height="60"  rx="17"/>
+  </g>
+</svg>
