@@ -6,6 +6,24 @@ This is an unofficial hobby project. It is not affiliated with, endorsed by, or 
 
 It was built in conversation with [Claude Code](https://claude.com/claude-code), Anthropic's coding assistant: the code and this README were written by Claude, directed and tested by the repository owner on their own pendant.
 
+<img src="PendantApp/Support/AppIcon.svg" width="96" alt="Pendant app icon">
+
+## What it looks like
+
+These screenshots use the made-up sample recordings from `tools/make_demo.py`, not real conversations.
+
+**A day's recordings, the player and a transcript.** The calendar marks days that have recordings. This recording was combined from two parts: the dot under the playback bar marks where they meet, and the ⚠ line shows a passage where the two speech models disagreed.
+
+![The Pendant window showing a calendar, a list of recordings, a player and a transcript](docs/screenshots/main.png)
+
+**English and Spanish in the same recording.** Each line is labelled with the language that was detected.
+
+![A transcript with lines in Spanish and English](docs/screenshots/bilingual.png)
+
+**Combining recordings.** Press Combine, tick the recordings to join, and optionally name the result.
+
+![Two recordings ticked in the list, with a panel showing their combined length and a Combine button](docs/screenshots/combine.png)
+
 ## Status
 
 It works on one person's setup: a pendant on firmware 1.1.20 and an M4 MacBook Air running macOS 26. It has not been tested on other firmware versions, Intel Macs, or older macOS releases. Expect rough edges.
@@ -19,8 +37,6 @@ It works on one person's setup: a pendant on firmware 1.1.20 and an M4 MacBook A
 - **English and Spanish:** the language is detected for each short piece of audio, so a conversation that moves between languages is transcribed in each. Whisper supports many more languages; only English and Spanish have been tried.
 - **Plain files:** every transcript is a text file, and each day also gets one Markdown file, easy to paste into a chat assistant or read with any tool.
 - **Delete:** moves a recording and its transcript to the Trash.
-
-<img src="PendantApp/Support/AppIcon.svg" width="96" alt="Pendant app icon">
 
 ## Before you start
 
