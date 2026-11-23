@@ -19,3 +19,6 @@ logs/
 
 __pycache__/
 *.pyc
+
+# Sample library made by tools/make_demo.py
+demo/

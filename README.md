@@ -65,6 +65,20 @@ open -a Pendant
 
 To remove everything, drag Pendant from Applications to the Trash and delete the `pendant-mac` folder (back up its `Library` folder first if you want to keep your recordings).
 
+## Try it without a pendant
+
+To see how the app looks and works before syncing anything, you can load a sample library of made-up recordings. The audio is computer-generated speech reading made-up meeting notes in English and Spanish.
+
+```bash
+runtime/venv/bin/python tools/make_demo.py
+```
+
+```bash
+open -a Pendant --args -libraryPath "$PWD/demo/Library" -transcriptionPaused YES
+```
+
+Quit Pendant first if it is already open. The sample library lives in a `demo` folder and does not touch your own recordings; opening Pendant normally goes back to your own library.
+
 ## First sync
 
 1. Open the app and press **Sync**. macOS asks whether Pendant may use Bluetooth; allow it.
