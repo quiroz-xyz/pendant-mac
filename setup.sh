@@ -1,5 +1,5 @@
 #!/bin/zsh
-# One-time setup: installs what the app needs and builds Pendant.app.
+# One-time setup: installs what the app needs, builds Pendant.app and puts it in Applications.
 # Safe to run again; it skips what is already done.
 set -e
 cd "$(dirname "$0")"
@@ -33,9 +33,9 @@ runtime/venv/bin/pip install -q -e "vendor/pendant-cli[dev,opus]"
 (cd vendor/pendant-cli && ../../runtime/venv/bin/python scripts/gen_proto.py >/dev/null)
 
 echo "== Building the app (the first build takes several minutes)"
-PendantApp/build.sh
+PendantApp/build.sh --install
 
 echo
-echo "Done. The app is at:  PendantApp/build/Pendant.app"
-echo "Open it with:         open PendantApp/build/Pendant.app"
-echo "Keep this folder where it is: the app uses the Python environment inside it."
+echo "Done. Pendant is now in your Applications folder."
+echo "Open it from Launchpad or Spotlight, or with:  open -a Pendant"
+echo "Keep this folder where it is: the app uses the Python environment, models and library inside it."

@@ -53,15 +53,17 @@ cd pendant-mac
 ./setup.sh
 ```
 
-`setup.sh` installs Python 3.12 and Opus with Homebrew, downloads [pendant-cli](https://github.com/MAkcanca/pendant-cli) into a `vendor` folder, creates a private Python environment in `runtime`, and builds the app. The first build takes several minutes.
+`setup.sh` installs Python 3.12 and Opus with Homebrew, downloads [pendant-cli](https://github.com/MAkcanca/pendant-cli) into a `vendor` folder, creates a private Python environment in `runtime`, builds the app, and copies it into your Applications folder. The first build takes several minutes.
 
-Then open the app:
+Pendant then appears in Applications, Launchpad and Spotlight like any other app. You can also open it from Terminal:
 
 ```bash
-open PendantApp/build/Pendant.app
+open -a Pendant
 ```
 
-Keep the project folder where it is after setup. The app uses the Python environment inside it. If you move the folder, run `./setup.sh` again.
+**Do not move or delete the `pendant-mac` folder after setup.** The app in Applications is only the window; the Python environment, the speech models and your recordings all live in that folder. If you do move it, run `./setup.sh` again from its new place.
+
+To remove everything, drag Pendant from Applications to the Trash and delete the `pendant-mac` folder (back up its `Library` folder first if you want to keep your recordings).
 
 ## First sync
 
