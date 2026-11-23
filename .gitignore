@@ -1,0 +1,21 @@
+# Your private data: recordings, transcripts, sync journals
+Library/
+
+# Downloaded speech models (about 3.4 GB)
+Models/
+
+# Local Python environment and third-party code fetched by setup.sh
+runtime/
+vendor/
+pendant-sync/
+
+# Build output
+PendantApp/.build/
+PendantApp/build/
+
+.DS_Store
+*.log
+logs/
+
+__pycache__/
+*.pyc
